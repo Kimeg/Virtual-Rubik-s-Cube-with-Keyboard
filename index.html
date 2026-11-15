@@ -1,17 +1,74 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/0.10.2/p5.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/0.10.2/addons/p5.sound.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/gh/freshfork/p5.EasyCam@1.0.10/p5.easycam.min.js"></script>
-    <link rel="stylesheet" type="text/css" href="style.css">
-    <meta charset="utf-8" />
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>N×N Rubik's Cube Simulator</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header><h1>N×N Rubik’s Cube</h1><p>Custom keys · x/y/z rotations · replay · sound</p><div class="modes"><button type="button" id="modeFree" class="on">Free play</button><button type="button" id="modeTrain">CFOP training</button></div></header>
+<main class="app">
+<aside class="col">
+ <section class="card"><h2>Cube</h2>
+  <form id="sizeForm" class="row"><label for="sizeInput">Size N (2–10)</label><input id="sizeInput" type="number" min="2" max="10" step="1" value="3" required><button type="submit" id="createBtn">Create</button></form>
+  <div class="btn-grid"><button id="scramble">Scramble</button><button id="solve">Auto-solve</button><button id="reset">Reset</button><button id="viewToggle" type="button">View: Above</button><button id="resetView" class="span2">Reset view</button></div>
+ </section>
+ <section class="card"><h2>Display</h2>
+  <div class="row"><label for="bgColor">Background</label><input type="color" id="bgColor" value="#151922"><div class="swatches"><button type="button" class="swatch" data-color="#151922" style="background:#151922" title="Midnight" aria-label="Midnight background"></button><button type="button" class="swatch" data-color="#000000" style="background:#000000" title="Black" aria-label="Black background"></button><button type="button" class="swatch" data-color="#2f3b52" style="background:#2f3b52" title="Slate" aria-label="Slate background"></button><button type="button" class="swatch" data-color="#7d8799" style="background:#7d8799" title="Gray" aria-label="Gray background"></button><button type="button" class="swatch" data-color="#e9edf4" style="background:#e9edf4" title="Light" aria-label="Light background"></button></div></div>
+  <div class="row"><label for="brightInput">Brightness</label><input id="brightInput" type="range" min="30" max="150" step="5" value="100"><strong id="brightValue">100%</strong></div>
+  <div class="row"><button type="button" id="displayDefaults">Reset display</button></div>
+ </section>
+ <section class="card"><h2>Cube colors</h2>
+  <div class="color-grid" id="faceColors"><label title="Up (top face)"><span>U</span><input type="color" data-face="U" value="#ffffff"></label><label title="Down (bottom face)"><span>D</span><input type="color" data-face="D" value="#ffd500"></label><label title="Left face"><span>L</span><input type="color" data-face="L" value="#ff8c20"></label><label title="Right face"><span>R</span><input type="color" data-face="R" value="#d92332"></label><label title="Front face"><span>F</span><input type="color" data-face="F" value="#16a05d"></label><label title="Back face"><span>B</span><input type="color" data-face="B" value="#2468e8"></label><label title="Cube body (plastic between the tiles)"><span>Body</span><input type="color" data-face="body" value="#0c0d11"></label><button type="button" id="colorsDefaults" title="Restore the default colors">Reset</button></div>
+ </section>
+ <section class="card"><h2>Sound &amp; speed</h2>
+  <div class="row"><label class="sound-check"><input type="checkbox" id="soundOn" checked> Sound</label><input id="volumeInput" type="range" min="0" max="100" step="1" value="60" aria-label="Volume"><strong id="volumeValue">60%</strong></div>
+  <div class="row"><label for="speedInput">Turn time</label><input id="speedInput" type="range" min="35" max="180" step="5" value="55"><strong id="speedValue">55 ms</strong></div>
+ </section>
+ <details class="card help"><summary>Help</summary><ul>
+  <li>Drag the cube to rotate the view; mouse wheel zooms. The View key (default <code>W</code>) flips to the mirror view across the YZ plane.</li>
+  <li>Cube colors set the color of each side as the cube was built, so the colors follow the pieces when you turn. Body is the black plastic between the tiles.</li>
+  <li>Key bindings: click a key button, press a letter, then Save. Every key must be unique. x/y/z rotate the whole cube like R/U/F.</li>
+  <li>M/E/S are middle slices (on even cubes they use one central layer). Auto-solve reverses moves made in this simulator.</li>
+  <li>Replay: first line is the scramble, following lines are steps; text after <code>//</code> is a label. Moves: U D L R F B, wide <code>r</code> / <code>Rw</code>, M E S, x y z, with <code>'</code> and <code>2</code>.</li>
+  <li>CFOP training: switch the mode at the top right, choose Cross, F2L, OLL or PLL, and click an algorithm. It is demonstrated move by move with the cross color on the bottom; use the controls under the cube to play, stop, resume, or step forward and backward.</li>
+  <li>While a replay is loaded, manual key turns are disabled; press Exit replay to turn the cube yourself.</li>
+ </ul></details>
+</aside>
+<div class="center">
+ <div id="scene" aria-label="Interactive 3D Rubik's cube"></div>
+ <div class="status" id="status">Ready · 3×3 cube</div>
+ <section class="card"><h2>Replay controls</h2>
+  <div class="transport"><button type="button" id="rpPlay" disabled>▶ Play</button><button type="button" id="rpStop" disabled>■ Stop</button><button type="button" id="rpResume" disabled>⏵ Resume</button><button type="button" id="rpReset" disabled>⟲ Reset</button><button type="button" id="rpBack" disabled>◀ Back 1</button><button type="button" id="rpFwd" disabled>Forward 1 ▶</button></div>
+  <div class="row"><label for="rpDelay" style="min-width:auto">Pause between moves</label><input id="rpDelay" type="range" min="0" max="800" step="10" value="150" style="max-width:260px"><strong id="rpDelayVal">150 ms</strong><span class="rp-progress" id="rpProgress"></span></div>
+ </section>
+</div>
+<aside class="col">
+ <section class="card" id="keysCard"><h2>Key bindings</h2>
+  <form id="keyForm"><div class="mapping-grid" id="mappingGrid"></div><div class="row"><button type="submit" id="saveKeys">Save keys</button><button type="button" id="defaults">Restore defaults</button></div></form>
+ </section>
+ <section class="card" id="replayCard"><h2>Replay</h2>
+  <textarea id="rpInput" spellcheck="false" aria-label="Replay text: first line is the scramble, following lines are solution moves">U' L2 U L2 B2 D' U' B2 L2 U' F' L2 D R2 U L B' D2 F2 D2 R'
 
-  </head>
-  <body>
-    <script src="sketch.js"></script>
-    <script src="face.js"></script>
-    <script src="cube.js"></script>
-    <script src="util.js"></script>
-  </body>
+x' z' // inspection
+r' F R2 r' U r D F2 // xxcross
+U' U' U' R' U R // 3rd pair
+U' R U R' // 4th pair
+R U R' U R U2' R' // OLL(CP)
+U // AUF</textarea>
+  <div class="row" style="margin-top:8px"><button type="button" id="rpLoad">Load replay</button><button type="button" id="rpExit" disabled>Exit replay</button></div>
+  <div class="rp-msg" id="rpStatus">Paste a scramble on the first line and solution moves on the following lines, then press Load replay.</div>
+  <div id="rpMoves" hidden></div>
+ </section>
+<section class="card" id="trainingCard"><h2>CFOP training</h2>
+  <div class="tr-tabs" id="trTabs"><button type="button" data-sec="cross">Cross</button><button type="button" data-sec="f2l">F2L</button><button type="button" data-sec="oll">OLL</button><button type="button" data-sec="pll">PLL</button></div>
+  <p class="tr-desc" id="trDesc"></p>
+  <div class="tr-list" id="trList"></div>
+  <div class="tr-detail"><div class="tr-title" id="trTitle">Pick an algorithm to demonstrate</div><div class="tr-alg" id="trAlg"></div><div class="tr-note" id="trNote">Click any entry. It plays automatically; use the replay controls under the cube to stop, resume, or step one move forward or backward.</div><div class="rp-msg" id="trStatus"></div><div id="trMoves" hidden></div></div>
+ </section>
+</aside>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+<script src="script.js"></script>
+</body>
 </html>
