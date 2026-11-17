@@ -2,7 +2,7 @@
 
 An interactive, browser-based 3D Rubik's Cube simulator built with **Three.js** and vanilla JavaScript. Designed for both casual solvers and speedcubers, it supports dynamic cube dimensions from $2\times2$ up to $10\times10$, customizable keyboard controls, procedural Web Audio sound effects, a notation replay engine, and an interactive **CFOP Training Mode**.
 
-![alt text](app.png)
+![alt](app.gif)
 
 ---
 
